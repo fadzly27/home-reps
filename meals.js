@@ -52,18 +52,26 @@
     var p = m.portion || 1;
     return { id: m.foodId || null, name: m.name, serving: m.serving, kcal: m.kcal / p, protein: (m.protein || 0) / p };
   }
-  function recentFoods() {
-    var keys = Object.keys(S.meals).sort().reverse(), seen = {}, out = [];
-    for (var i = 0; i < keys.length && out.length < 12; i++) {
-      var meals = dayMeals(keys[i]).slice().reverse();
-      for (var j = 0; j < meals.length && out.length < 12; j++) {
-        var m = meals[j], key = m.foodId || ('n:' + norm(m.name));
-        if (seen[key]) continue;
-        seen[key] = true;
-        out.push(getFood(m.foodId) || foodFromEntry(m));
-      }
-    }
-    return out;
+  // Every food you've ever logged, most useful first for the chosen meal:
+  // eaten most often at this meal → eaten most often overall → eaten most recently.
+  function myFoods(meal) {
+    var keys = Object.keys(S.meals).sort().reverse(), stats = {}, order = 0;
+    keys.forEach(function (k) {
+      dayMeals(k).slice().reverse().forEach(function (m) {
+        var key = m.foodId || ('n:' + norm(m.name));
+        var s = stats[key];
+        if (!s) s = stats[key] = { food: getFood(m.foodId) || foodFromEntry(m), atMeal: 0, total: 0, recent: order++ };
+        s.total++;
+        if (m.meal === meal) s.atMeal++;
+      });
+    });
+    return Object.keys(stats).map(function (k) { return stats[k]; }).sort(function (a, b) {
+      return (b.atMeal - a.atMeal) || (b.total - a.total) || (a.recent - b.recent);
+    }).slice(0, 80).map(function (s) {
+      var f = {}; for (var p in s.food) f[p] = s.food[p];
+      f.times = s.total;
+      return f;
+    });
   }
   function favFoods() { return S.favs.map(getFood).filter(Boolean); }
   function defaultMeal() {
@@ -98,7 +106,8 @@
     MEALS.forEach(function (m) {
       var items = meals.filter(function (e) { return e.meal === m[0]; });
       var sum = items.reduce(function (s, e) { return s + e.kcal; }, 0);
-      html += '<div class="card flush"><div class="meal-head">' + m[1] + '<span>' + (sum ? fmt(sum) + ' kcal' : '') + '</span></div>' +
+      html += '<div class="card flush"><button class="meal-head" data-act="addfood" data-mode="list" data-meal="' + m[0] + '" aria-label="Add food to ' + m[1] + '">' + m[1] +
+        '<span>' + (sum ? fmt(sum) + ' kcal' : '') + '<b class="meal-add">＋ Add</b></span></button>' +
         (items.length ? items.map(function (e) {
           return '<button class="row" data-act="editentry" data-id="' + esc(e.id) + '"><span class="row-main"><span class="row-title">' + esc(e.name) + '</span><span class="row-sub">' +
             (e.portion !== 1 ? PORTION_LABEL[e.portion] + ' × ' : '') + esc(e.serving || '') + ' · ' + round1(e.protein || 0) + ' g protein</span></span><span class="row-right">' + fmt(e.kcal) + '</span></button>';
@@ -165,7 +174,11 @@
     return { mode: mode || 'list', q: '', favs: false, sel: null, portion: 1, meal: defaultMeal(), list: [],
       plate: { carb: 'rice', carbs: 1, prot: 'chicken', prots: 1, cook: 'plain', veg: 1, vcook: 'stir', extra: 1 }, product: null, scanMsg: '' };
   }
-  ACTIONS.addfood = function (b) { af = newAf(b.dataset.mode); HR.go('addfood'); };
+  ACTIONS.addfood = function (b) {
+    af = newAf(b.dataset.mode);
+    if (b.dataset.meal && MEAL_LABEL[b.dataset.meal]) af.meal = b.dataset.meal;
+    HR.go('addfood');
+  };
   HR.leaveAddFood = function () { stopScanner(); };
 
   function topbar(left, title) {
@@ -207,7 +220,7 @@
     var list, label;
     if (af.q.trim()) { list = searchFoods(af.q); label = list.length ? 'Results' : ''; }
     else if (af.favs) { list = favFoods(); label = 'Favourites'; }
-    else { list = recentFoods(); label = 'Recent'; }
+    else { list = myFoods(af.meal); label = list.length ? 'Your foods · most eaten at ' + MEAL_LABEL[af.meal].toLowerCase() + ' first' : 'Your foods'; }
     af.list = list;
     var lab = $('af-label'); if (lab) lab.textContent = label;
     var box = $('af-list'); if (!box) return;
@@ -219,7 +232,7 @@
     box.innerHTML = list.map(function (f, i) {
       var fav = f.id && S.favs.indexOf(f.id) >= 0;
       return '<div class="row' + (foodKey(f) === selKey ? ' selected' : '') + '" role="button" tabindex="0" data-act="afpick" data-i="' + i + '"><span class="row-main"><span class="row-title">' + esc(f.name) + '</span>' +
-        '<span class="row-sub">' + esc(f.serving || '') + ' · ' + round1(f.protein || 0) + ' g protein' + (f.estimated ? ' · est.' : '') + '</span></span>' +
+        '<span class="row-sub">' + esc(f.serving || '') + ' · ' + round1(f.protein || 0) + ' g protein' + (f.estimated ? ' · est.' : '') + (f.times > 1 ? ' · ' + f.times + '×' : '') + '</span></span>' +
         '<span class="row-right">' + fmt(f.kcal) + ' kcal</span>' +
         (f.id ? '<button class="star' + (fav ? ' on' : '') + '" data-act="afstar" data-i="' + i + '" aria-label="Favourite">' + (fav ? '★' : '☆') + '</button>' : '<span style="width:34px"></span>') + '</div>';
     }).join('');
@@ -243,6 +256,7 @@
   ACTIONS.afmeal = function (b) {
     af.meal = b.dataset.v;
     Array.prototype.forEach.call(document.querySelectorAll('[data-act=afmeal]'), function (x) { x.classList.toggle('on', x.dataset.v === af.meal); });
+    if (af.mode === 'list' && !af.q.trim() && !af.favs) renderList();
   };
   ACTIONS.afmode = function (b) {
     if (af.mode === 'product') { af.sel = null; af.product = null; }

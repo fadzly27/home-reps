@@ -278,7 +278,10 @@ html.dark .chart .b { fill: var(--link); }
 
 /* ---------- Meals ---------- */
 .meal-head { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 16px 4px; font-weight: 600; }
-.meal-head span { color: var(--text2); font-weight: 500; font-size: 15px; font-variant-numeric: tabular-nums; }
+button.meal-head { width: 100%; text-align: left; min-height: 48px; align-items: center; padding-bottom: 8px; }
+.meal-head span { color: var(--text2); font-weight: 500; font-size: 15px; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 10px; }
+.meal-add { color: var(--link); font-weight: 600; font-size: 15px; }
+button.meal-head:active { background: var(--fill); }
 .meal-empty { color: var(--text2); font-size: 15px; padding: 2px 16px 12px; }
 
 .search { display: flex; align-items: center; gap: 8px; background: var(--fill); border-radius: 10px; padding: 0 10px; min-height: 44px; margin: 10px 0; }

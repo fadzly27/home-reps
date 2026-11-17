@@ -3,7 +3,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.1.0';
+  var VERSION = '1.2.0';
   var EX = window.HR_EX, PROGRAM = window.HR_PROGRAM, LEVEL = window.HR_LEVEL, DEMO = window.HR_DEMO;
   var HR = window.HR = {};
 

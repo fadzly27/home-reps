@@ -7,7 +7,8 @@ A personal home-workout app for body recomposition: open it, see today's plan, t
 - Weight is fixed, so each exercise levels up instead: **L1 Normal → L2 Tempo → L3 Pause → L4 + Band → Max (45 s rest)**.
   When every set hits the top of the rep range, the exercise levels up next time and the target resets to the bottom.
 - Rest timer with a beep and a screen flash, stick-figure demos and a How To screen for every exercise.
-- Meals: 1,200+ Malaysian foods with calories **and protein**, Build a plate, barcode scan, Recent, Favourites,
+- Meals: tap **+ Add** on Breakfast / Lunch / Snacks / Dinner to see every food you have eaten, the ones you
+  usually eat at that meal first. 1,200+ Malaysian foods with calories **and protein**, Build a plate, barcode scan, Favourites,
   Same as yesterday. Targets: calories = TDEE (Mifflin-St Jeor) − 300, protein = 1.6 g × body weight.
 - Progress: waist / arm / weight every 2 weeks, plus a sessions-per-week chart. Tap any measurement in
   History to correct or delete it.
