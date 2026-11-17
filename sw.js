@@ -1,6 +1,6 @@
 /* Home Reps — service worker
    Bump CACHE (hr-v1 → hr-v2 …) whenever you change any file. */
-var CACHE = 'hr-v3';
+var CACHE = 'hr-v4';
 var RUNTIME = 'hr-runtime';
 var ASSETS = [
   './',

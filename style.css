@@ -257,6 +257,7 @@ html.dark .done-check { background: #1F8A3B; }
 .d.bad { color: var(--orange); }
 .d.flat { color: var(--text2); }
 .meaning { font-size: 17px; font-weight: 600; }
+.food-tip { font-size: 15px; margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--sep); }
 .chart { width: 100%; height: auto; display: block; }
 .chart .b { fill: var(--accent); }
 html.dark .chart .b { fill: var(--link); }

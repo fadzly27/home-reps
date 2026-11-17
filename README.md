@@ -10,7 +10,8 @@ A personal home-workout app for body recomposition: open it, see today's plan, t
 - Meals: tap **+ Add** on Breakfast / Lunch / Snacks / Dinner to see every food you have eaten, the ones you
   usually eat at that meal first. 1,200+ Malaysian foods with calories **and protein**, Build a plate, barcode scan, Favourites,
   Same as yesterday. Targets: calories = TDEE (Mifflin-St Jeor) − 300, protein = 1.6 g × body weight.
-- Progress: waist / arm / weight every 2 weeks, plus a sessions-per-week chart. Tap any measurement in
+- Progress: waist / arm / weight every 2 weeks, average calories and protein over the last 7 days (with a tip
+  that links what you ate to your waist and arm), and a sessions-per-week chart. Tap any measurement in
   History to correct or delete it.
 
 It's a static Progressive Web App (HTML, CSS, vanilla JS). No build step, no server, no login, and it works offline.

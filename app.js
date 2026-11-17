@@ -3,7 +3,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.2.0';
+  var VERSION = '1.3.0';
   var EX = window.HR_EX, PROGRAM = window.HR_PROGRAM, LEVEL = window.HR_LEVEL, DEMO = window.HR_DEMO;
   var HR = window.HR = {};
 
@@ -525,8 +525,46 @@
     if (w > 0) return 'Waist up a little. Check calories and keep 3 sessions a week.';
     return weeks >= 4 ? 'Holding steady. Check protein and hit 3 sessions a week.' : 'No big change yet. That’s normal early on. Keep going.';
   }
+  // Food over the last 7 full days (today is left out because it isn't finished).
+  // Only days with something logged count, so a forgotten day doesn't drag the average down.
+  function foodStats() {
+    var tg = HR.targets(), t = todayKey(), fs = { days: 0, sumK: 0, sumP: 0, kOk: 0, pOk: 0, tgK: tg.kcal, tgP: tg.protein };
+    for (var i = 1; i <= 7; i++) {
+      var k = addDays(t, -i);
+      if (!(S.meals[k] && S.meals[k].length)) continue;
+      var tot = HR.mealTotals(k);
+      fs.days++; fs.sumK += tot.kcal; fs.sumP += tot.protein;
+      if (Math.abs(tot.kcal - tg.kcal) <= tg.kcal * 0.1) fs.kOk++;
+      if (tot.protein >= tg.protein * 0.9) fs.pOk++;
+    }
+    fs.avgK = fs.days ? fs.sumK / fs.days : 0;
+    fs.avgP = fs.days ? fs.sumP / fs.days : 0;
+    return fs;
+  }
+  // One extra line that links the body changes to what you ate (needs 3+ logged days).
+  function foodTip(fs, dw, da, n) {
+    if (fs.days < 3) return '';
+    var over = fs.avgK - fs.tgK, lowP = fs.avgP < fs.tgP * 0.9;
+    var waistStuck = n < 2 || dw > -0.4, armStuck = n < 2 || da < 0.3;
+    if (over > fs.tgK * 0.05 && waistStuck) return (n >= 2 ? 'Waist not moving. ' : '') + 'You averaged ' + fmt(over) + ' kcal over target. Eat closer to ' + fmt(fs.tgK) + ' kcal.';
+    if (lowP && armStuck) return (n >= 2 ? 'Arm not growing yet. ' : '') + 'Protein averaged ' + Math.round(fs.avgP) + ' g. Aim for ' + fs.tgP + ' g.';
+    if (lowP) return 'Protein averaged ' + Math.round(fs.avgP) + ' g. Aim for ' + fs.tgP + ' g to keep your muscle.';
+    if (over > fs.tgK * 0.05) return 'Calories averaged ' + fmt(over) + ' kcal over target. Results are fine, but keep an eye on it.';
+    if (fs.avgK < fs.tgK * 0.8) return 'You averaged ' + fmt(fs.tgK - fs.avgK) + ' kcal under target (or some meals weren’t logged). Eating too little can cost muscle.';
+    return 'Food on track: calories and protein near target.';
+  }
+  function foodCard(fs) {
+    if (!fs.days) return '<div class="card"><div class="muted small">Log your meals for a few days to see your averages here.</div></div>';
+    var dK = fs.avgK - fs.tgK;
+    return '<div class="card"><div class="bar-block"><div class="bar-head"><span>Avg <b>' + fmt(fs.avgK) + '</b> / ' + fmt(fs.tgK) + ' kcal</span><span class="muted">' + (Math.abs(dK) < 1 ? 'on target' : (dK > 0 ? '+' : '−') + fmt(Math.abs(dK))) + '</span></div>' +
+      '<div class="bar kcal"><i style="width:' + clamp(fs.avgK / fs.tgK * 100, 0, 100) + '%"></i></div></div>' +
+      '<div class="bar-block"><div class="bar-head"><span>Avg <b>' + Math.round(fs.avgP) + '</b> / ' + fs.tgP + ' g protein</span><span class="muted">' + (fs.avgP >= fs.tgP ? 'done ✓' : '−' + Math.round(fs.tgP - fs.avgP) + ' g') + '</span></div>' +
+      '<div class="bar prot"><i style="width:' + clamp(fs.avgP / fs.tgP * 100, 0, 100) + '%"></i></div></div>' +
+      '<div class="muted small" style="margin-top:12px">On target: calories ' + fs.kOk + ' of ' + fs.days + ' days · protein ' + fs.pOk + ' of ' + fs.days + ' days</div></div>' +
+      '<div class="note">' + plural(fs.days, 'day') + ' logged. Calories on target = within 10%. Protein on target = 90% or more.</div>';
+  }
   RENDER.progress = function () {
-    var m = S.measure, html = '<div class="topbar"><span></span></div><h1 class="large-title">Progress</h1>';
+    var m = S.measure, fs = foodStats(), html = '<div class="topbar"><span></span></div><h1 class="large-title">Progress</h1>';
     if (m.length) {
       var f = m[0], l = m[m.length - 1];
       var dw = l.waistCm - f.waistCm, da = l.armCm - f.armCm, dk = l.weightKg - f.weightKg;
@@ -535,9 +573,12 @@
         return '<div class="metric"><div class="k">' + k + '</div><div class="v">' + v.toFixed(1) + ' <small>' + unit + '</small></div><div class="d ' + (m.length > 1 ? cls(d, good) : 'flat') + '">' + (m.length > 1 ? signed(d, unit) : 'start') + '</div></div>';
       };
       html += '<div class="metrics">' + metric('Waist', l.waistCm, 'cm', dw, -1) + metric('Arm', l.armCm, 'cm', da, 1) + metric('Weight', l.weightKg, 'kg', dk, 0) + '</div>';
+      var tip = foodTip(fs, dw, da, m.length);
       html += '<div class="card"><div class="meaning">' + esc(meaning(dw, da, dk, m.length, daysBetween(f.date, l.date) / 7)) + '</div>' +
+        (tip ? '<div class="food-tip">🍽️ ' + esc(tip) + '</div>' : '') +
         '<div class="muted small" style="margin-top:4px">' + (m.length > 1 ? 'Change since ' + shortDate(f.date) + ' · ' + plural(m.length, 'measurement') : 'Measured ' + shortDate(f.date)) + '</div></div>';
     }
+    html += '<h2 class="section-label">Food · last 7 days</h2>' + foodCard(fs);
     html += '<h2 class="section-label">Sessions per week</h2><div class="card">' + weeksChart() + '</div>';
     var due = measureDue();
     html += '<button class="btn-primary" data-act="go" data-to="measure">' + (due > 0 ? 'Re-measure · in ' + plural(due, 'day') : 'Re-measure · due now') + '</button>';
