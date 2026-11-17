@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Home Reps</title>
+  <meta name="description" content="Home workouts and calories, no thinking needed.">
+  <meta name="theme-color" content="#F2F2F7">
+  <meta name="color-scheme" content="light dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Home Reps">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <script>
+    // Apply the theme before first paint (no flash of the wrong theme).
+    (function () {
+      var t = 'auto';
+      try { t = (JSON.parse(localStorage.getItem('hr-settings') || '{}').theme) || 'auto'; } catch (e) { }
+      var dark = t === 'dark' || (t === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.className = dark ? 'dark' : 'light';
+      document.querySelector('meta[name=theme-color]').setAttribute('content', dark ? '#000000' : '#F2F2F7');
+    })();
+  </script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="app">
+    <section class="screen tab-screen" id="s-today"></section>
+    <section class="screen tab-screen" id="s-meals"></section>
+    <section class="screen tab-screen" id="s-progress"></section>
+    <section class="screen" id="s-workout"></section>
+    <section class="screen" id="s-howto"></section>
+    <section class="screen" id="s-rest"></section>
+    <section class="screen" id="s-complete"></section>
+    <section class="screen" id="s-addfood"></section>
+    <section class="screen" id="s-measure"></section>
+    <section class="screen" id="s-settings"></section>
+    <section class="screen" id="s-setup"></section>
+  </main>
+
+  <nav class="tabbar" id="tabbar" aria-label="Tabs">
+    <button class="tab" data-act="tab" data-tab="today">
+      <svg viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="11" width="4" height="6" rx="1.2"/><rect x="21" y="11" width="4" height="6" rx="1.2"/><rect x="7" y="8" width="3.5" height="12" rx="1.2"/><rect x="17.5" y="8" width="3.5" height="12" rx="1.2"/><rect x="10.5" y="12.8" width="7" height="2.4" rx="1"/></svg>
+      <span>Today</span>
+    </button>
+    <button class="tab" data-act="tab" data-tab="meals">
+      <svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="8.5" fill="none" stroke-width="2.2"/><circle cx="14" cy="14" r="4.2"/></svg>
+      <span>Meals</span>
+    </button>
+    <button class="tab" data-act="tab" data-tab="progress">
+      <svg viewBox="0 0 28 28" aria-hidden="true"><rect x="4" y="15" width="5" height="9" rx="1.5"/><rect x="11.5" y="9" width="5" height="15" rx="1.5"/><rect x="19" y="4" width="5" height="20" rx="1.5"/></svg>
+      <span>Progress</span>
+    </button>
+  </nav>
+
+  <div class="sheet-wrap" id="sheet" hidden><div class="sheet-backdrop" data-act="sheet-close"></div><div class="sheet" id="sheet-body"></div></div>
+  <div class="dialog-wrap" id="dialog" hidden><div class="dialog" id="dialog-body" role="alertdialog" aria-modal="true"></div></div>
+  <div class="toast" id="toast" hidden></div>
+  <div class="flash" id="flash"></div>
+  <input type="file" id="import-file" accept="application/json,.json" hidden>
+
+  <script src="foods.js"></script>
+  <script src="exercises.js"></script>
+  <script src="app.js"></script>
+  <script src="meals.js"></script>
+</body>
+</html>
