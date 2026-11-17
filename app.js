@@ -3,7 +3,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.0.0';
+  var VERSION = '1.1.0';
   var EX = window.HR_EX, PROGRAM = window.HR_PROGRAM, LEVEL = window.HR_LEVEL, DEMO = window.HR_DEMO;
   var HR = window.HR = {};
 
@@ -541,7 +541,41 @@
     html += '<h2 class="section-label">Sessions per week</h2><div class="card">' + weeksChart() + '</div>';
     var due = measureDue();
     html += '<button class="btn-primary" data-act="go" data-to="measure">' + (due > 0 ? 'Re-measure · in ' + plural(due, 'day') : 'Re-measure · due now') + '</button>';
+    if (m.length) {
+      html += '<h2 class="section-label">History</h2><div class="card flush">' + m.map(function (x, i) {
+        return '<button class="row" data-act="medit" data-i="' + i + '"><span class="row-main"><span class="row-title">' + esc(longDate(x.date)) + (i === 0 ? ' <span class="pill">start</span>' : '') + '</span>' +
+          '<span class="row-sub">Waist ' + x.waistCm.toFixed(1) + ' · Arm ' + x.armCm.toFixed(1) + ' cm · ' + x.weightKg.toFixed(1) + ' kg</span></span><span class="chev"></span></button>';
+      }).reverse().join('') + '</div><div class="note">Tap a measurement to correct or delete it.</div>';
+    }
     $('s-progress').innerHTML = html;
+  };
+
+  /* ---------- edit / delete a past measurement ---------- */
+  var mEditIdx = -1;
+  ACTIONS.medit = function (b) {
+    mEditIdx = +b.dataset.i;
+    var x = S.measure[mEditIdx]; if (!x) return;
+    mtmp = { waistCm: x.waistCm, armCm: x.armCm, weightKg: x.weightKg };
+    openSheet('<h2 style="margin:4px 0 12px;font-size:20px">Edit ' + esc(longDate(x.date)) + '</h2>' + measureRows() +
+      '<button class="btn-primary" data-act="meditsave">Save</button>' +
+      (S.measure.length > 1 ? '<button class="btn-text danger" style="width:100%" data-act="mdelete">Delete this measurement</button>' : ''));
+  };
+  function afterMeasureChange(msg) {
+    var before = { k: S.settings.kcalTarget, p: S.settings.proteinTarget };
+    save('measure');
+    var tg = recalcTargets();
+    closeSheet(); rerender();
+    toast(before.k !== tg.kcal || before.p !== tg.protein ? msg + '. Targets updated: ' + fmt(tg.kcal) + ' kcal · ' + tg.protein + ' g' : msg);
+  }
+  ACTIONS.meditsave = function () {
+    var x = S.measure[mEditIdx]; if (!x) return;
+    S.measure[mEditIdx] = { date: x.date, waistCm: mtmp.waistCm, armCm: mtmp.armCm, weightKg: mtmp.weightKg };
+    afterMeasureChange('Measurement updated');
+  };
+  ACTIONS.mdelete = function () {
+    var x = S.measure[mEditIdx]; if (!x || S.measure.length < 2) return;
+    dialog({ title: 'Delete measurement?', text: 'The measurement from ' + longDate(x.date) + ' will be removed. This can’t be undone.',
+      buttons: [{ label: 'Delete', danger: true, fn: function () { S.measure.splice(mEditIdx, 1); afterMeasureChange('Measurement deleted'); } }, { label: 'Cancel', bold: true }] });
   };
   function weeksChart() {
     var thisMon = mondayOf(todayKey()), first = doneSessions()[0], firstMon = first ? mondayOf(first.date) : thisMon;
@@ -586,7 +620,8 @@
   ACTIONS.mstep = function (b) {
     var k = b.dataset.k, f = MFIELDS.filter(function (x) { return x[0] === k; })[0];
     mtmp[k] = clamp(round1(mtmp[k] + Number(b.dataset.d)), 10, 250);
-    $('m-' + k).textContent = mtmp[k].toFixed(1) + ' ' + f[2];
+    // the same rows exist on the Measure screen, Setup and the edit sheet, so update the one next to this button
+    b.parentNode.querySelector('.step-val').textContent = mtmp[k].toFixed(1) + ' ' + f[2];
   };
   function saveMeasurement() {
     var t = todayKey(), entry = { date: t, waistCm: mtmp.waistCm, armCm: mtmp.armCm, weightKg: mtmp.weightKg };
